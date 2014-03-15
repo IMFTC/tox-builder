@@ -1,0 +1,455 @@
+#!/bin/bash
+
+# Copyright (C) 2014 Volker Sobek <reklov@live.com>
+#
+# This file is part of tox-builder.
+#
+# tox-builder is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tox is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#                               README
+#
+# tox-builder automatically downloads, builds and installs toxic and
+# friends inside your $HOME directory.
+#
+# What tox-builder is *NOT*: It's not made for installing system wide
+# in /usr/local and the like!
+#
+#                    INSTALLING THE TOXIC CLIENT
+#
+# If you have all system dependencies installed (most likely you have
+# not yet) all you need to do to install libsodium, ProjectTox-Core
+# and toxic is running:
+#
+#   tox-builder build
+#
+# After successfully running this script, you can run toxic with:
+#
+#   tox-builder run toxic
+#
+# This will launch toxic with the LD_LIBRARY_PATH and PATH env
+# variables set to include the installation path.
+#
+#                          INSTALLING VENOM
+#
+# Venom is not installed by default by the command above. If you want to
+# install Venom, you have to additionally run:
+#
+#   tox-builder build venom
+#
+# And to run Venum:
+#
+#   tox-builder run venom
+#
+#                              UPDATING
+#
+# To update your local installation to include the latest upstream
+# changes run:
+#
+#   tox-builder update
+#
+# This is similar to the 'build' command, but it will only re-build
+# and re-install modules whose git HEAD has changed since the last
+# install; that is, if they have new local or upstream commits on the
+# specified branch, and modules that haven't been installed yet.
+#
+# NOTE: You could also just use the 'update' command for the first
+# checkout, build and install instead of the 'build' command.
+#
+#                             LOCATIONS
+#
+# By default tox-builder clones the git repos of all modules to
+#   $HOME/tox-builder/checkout/
+#
+# and installs to
+#  $HOME/tox-builder/install/
+#
+# TODO: Install system dependencies depending on the OS
+#
+
+# Don't touch these
+declare -A FIXED_CASE_NAME
+declare -A GIT_URL GIT_BRANCH GIT_TAG
+declare -A BUILD_CMAKE BUILD_AUTO BUILD_CONFIGURE BUILD_MAKE
+declare -A BUILD_INSTALL POST_INSTALL_INFO
+
+########################################################################
+#                               CONFIG
+# TOX_BUILDER_DIR
+# Everything (checkouts of git repos and the installation) will happen
+# in this directory. After successfully running this script you should
+# end up with something like this:
+
+# $TOX_BUILDER_DIR
+# |-- checkout
+# |   |-- libsodium       (git repo)
+# |   |-- ProjectTox-Core (git repo)
+# |   `-- toxic           (git repo)
+# `-- install             (this script will install to this folder)
+#     |-- bin
+#     |-- include
+#     |-- lib
+#     `-- share
+TOX_BUILDER_DIR="$HOME/tox-builder"
+#
+# Which modules should be built/updated if no module names were given
+# to 'build'/'update' commands? Modules must be in correct order!
+DEFAULT_MODULES="libsodium ProjectTox-Core toxic"
+#
+# L I B S O D I UM
+# https://github.com/jedisct1/libsodium/#installation
+GIT_URL[libsodium]="https://github.com/jedisct1/libsodium.git"
+FIXED_CASE_NAME[libsodium]='libsodium'
+GIT_TAG[libsodium]="0.4.2"
+BUILD_AUTO[libsodium]="./autogen.sh"
+BUILD_CONFIGURE[libsodium]="./configure\
+ --prefix='$TOX_BUILDER_DIR/install'"
+BUILD_MAKE[libsodium]="make && make check"
+BUILD_MAKE[libsodium]="make"
+BUILD_INSTALL[libsodium]="make install"
+#
+# P R O J E C T T O X - C O R E
+# https://github.com/irungentoo/ProjectTox-Core/blob/master/INSTALL.md#unix
+GIT_URL[ProjectTox-Core]="https://github.com/irungentoo/ProjectTox-Core.git"
+FIXED_CASE_NAME[projecttox-core]='ProjectTox-Core'
+GIT_BRANCH[ProjectTox-Core]="master"
+BUILD_AUTO[ProjectTox-Core]="autoreconf -if"
+BUILD_CONFIGURE[ProjectTox-Core]="./configure\
+ --prefix='$TOX_BUILDER_DIR/install'\
+ --with-dependency-search='$TOX_BUILDER_DIR/install'"
+BUILD_MAKE[ProjectTox-Core]="make"
+BUILD_INSTALL[ProjectTox-Core]="make install"
+#
+# T O X I C
+# http://wiki.tox.im/Toxic#Building
+GIT_URL[toxic]="https://github.com/Tox/toxic.git"
+FIXED_CASE_NAME[toxic]='toxic'
+GIT_BRANCH[toxic]="master"
+BUILD_AUTO[toxic]="autoreconf -i" # no -f here because it updates the outdated ./INSTALL which is tracked by git
+BUILD_CONFIGURE[toxic]="./configure\
+ --prefix='$TOX_BUILDER_DIR/install'\
+ --with-dependency-search='$TOX_BUILDER_DIR/install'"
+BUILD_MAKE[toxic]="make && make check"
+BUILD_INSTALL[toxic]="make install"
+POST_INSTALL_INFO[toxic]="== To launch toxic run: $0 run toxic =="
+#
+# V E N O M
+# https://github.com/naxuroqa/Venom/blob/master/INSTALL.md#linux
+GIT_URL[Venom]="https://github.com/naxuroqa/Venom.git"
+FIXED_CASE_NAME[venom]='Venom'
+GIT_BRANCH[Venom]="master"
+BUILD_CMAKE[Venom]="mkdir build && cd build &&\
+ PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig' cmake\
+ -DCMAKE_INSTALL_PREFIX='$TOX_BUILDER_DIR/install' .."
+BUILD_MAKE[Venom]="make"
+BUILD_INSTALL[Venom]="make install"
+POST_INSTALL_INFO[Venom]="== To launch Venom run: $0 run venom =="
+#
+############################################################################
+
+quit_on_error() {
+    echo "== An error occurred, quitting =="
+    exit
+}
+
+help_and_quit() {
+    echo "\
+Usage:
+
+  $0 build
+Build and install/re-install libsodium, ProjectTox-Core and
+toxic. Previously with tox-builder installed versions will be
+uninstalled beforehand.
+
+  $0 build MODULE-NAME...
+Build and install/re-install only the
+given modules. Previously with tox-builder installed versions will be
+uninstalled beforehand. Currently valid MODULE-NAME values: libsodium,
+projecttox-core, toxic, venom
+
+  $0 update
+  $0 update MODULE-NAME...
+Same like the build command, except that it only re-builds and
+re-installs modules whose specified branches have been updated (by
+upstream or local commits) since the last installation.
+
+  $0 run (toxic|venom)
+Run toxic or Venom from the tox-builder install
+directory with the correct LD_LIBRARY_PATH and PATH environment
+variables set."
+
+    exit
+}
+
+# Checks whether $TOX_BUILDER_DIR/{checkout,install} exist and are
+# safe to use.  If they don't exist yet, try to create them, if that
+# fails exit the script with an error message.
+check_tox_builder_dirs() {
+    if [[ -w "$TOX_BUILDER_DIR" ]]; then
+        if [[ -w "$TOX_BUILDER_DIR/.used-by-tox-builder" ]]; then
+            # Ensure the checkout and install subdirs exist
+            mkdir -p "$TOX_BUILDER_DIR/checkout" &&
+            mkdir -p "$TOX_BUILDER_DIR/install" &&
+            echo "== Found TOX_BUILDER_DIR: $TOX_BUILDER_DIR ==" ||
+
+            quit_on_error
+        else
+            echo "============================================================"
+            echo "The directory"
+            echo "   '$TOX_BUILDER_DIR'"
+            echo "exists but it looks like it was not created by tox-builder."
+            echo "if you want to use it anyway run the command:"
+            echo "  touch '$TOX_BUILDER_DIR/.used-by-tox-builder'"
+            echo "and re-run this script."
+            echo "============================================================"
+
+            quit_on_error
+        fi
+    else
+        echo "== Creating directory layout in '$TOX_BUILDER_DIR' … ==" &&
+        mkdir -p "$TOX_BUILDER_DIR" &&
+        # Let's be able to see that the folder was created by this script
+        touch "$TOX_BUILDER_DIR/.used-by-tox-builder" &&
+        mkdir -p "$TOX_BUILDER_DIR/checkout" &&
+        mkdir -p "$TOX_BUILDER_DIR/install" ||
+
+        quit_on_error
+    fi
+}
+
+clone_module() {
+    echo "== Cloning module $1 … ==" &&
+    cd "$TOX_BUILDER_DIR/checkout" &&
+
+    echo "git clone ${GIT_URL[$1]}" &&
+    git clone "${GIT_URL[$1]}" ||
+
+    quit_on_error
+}
+
+# Builds and installs the module if it has been updated since it was
+# last built and installed or if wasn't installed yet.
+update_module() {
+    echo "== Updating module $1 … ==" &&
+
+    if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
+        clone_module $1
+    fi
+
+    cd "$TOX_BUILDER_DIR/checkout/$1" ||
+    quit_on_error
+
+    if [[ ${GIT_BRANCH[$1]} ]]; then
+        echo "git checkout ${GIT_BRANCH[$1]}" &&
+        git checkout "${GIT_BRANCH[$1]}" &&
+
+        echo "git pull --rebase" &&
+        git pull --rebase ||
+
+        quit_on_error
+    elif [[ $GIT_TAG[$1] ]]; then
+        echo "git checkout ${GIT_TAG[$1]}" &&
+        git checkout "${GIT_TAG[$1]}" ||
+
+        quit_on_error
+    fi
+
+    # if the HEAD's hash is different from the installed version, rebuild
+    if [[ $(cat "$TOX_BUILDER_DIR/$1.installed" 2>/dev/null) != $(git rev-parse HEAD) ]]; then
+        echo "== Module $1 has been updated =="
+        build_module $1
+    else
+        echo "== Module $1 is up to date =="
+    fi
+}
+
+# Unconditionally builds or rebuilds the given module, *without*
+# updating the repo beforehand. However, it does clone the repo first,
+# if it hasn't been cloned yet.
+build_module() {
+    echo "== Building module $1 … =="
+
+    if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
+        clone_module $1
+    fi
+
+    cd "$TOX_BUILDER_DIR/checkout/$1" ||
+    quit_on_error
+
+    uninstall_module $1
+
+    echo "git clean -fdx"
+    git clean -fdx
+
+    # cmake commands
+    [[ ${BUILD_CMAKE[$1]} ]] && {
+        echo ${BUILD_CMAKE[$1]} &&
+        eval ${BUILD_CMAKE[$1]} ||
+        quit_on_error
+    }
+
+    # ./autogen.sh or autoreconf command
+    [[ ${BUILD_AUTO[$1]} ]] && {
+        echo ${BUILD_AUTO[$1]} &&
+        eval ${BUILD_AUTO[$1]} ||
+        quit_on_error
+    }
+
+    # ./configure command
+    [[ ${BUILD_CONFIGURE[$1]} ]] && {
+        echo ${BUILD_CONFIGURE[$1]} &&
+        eval ${BUILD_CONFIGURE[$1]} ||
+        quit_on_error
+    }
+
+    # make commands
+    [[ ${BUILD_MAKE[$1]} ]] && {
+        echo ${BUILD_MAKE[$1]} &&
+        eval ${BUILD_MAKE[$1]} ||
+        quit_on_error
+    }
+
+    # install command
+    [[ ${BUILD_INSTALL[$1]} ]] && {
+        echo ${BUILD_INSTALL[$1]} &&
+        eval ${BUILD_INSTALL[$1]} ||
+        quit_on_error
+    }
+
+    # remember installed version
+    echo $(git rev-parse HEAD) > "$TOX_BUILDER_DIR/$1.installed"
+
+    echo "== Module $1 installed successfully =="
+    [[ ${POST_INSTALL_INFO[$1]} ]] &&
+    echo ${POST_INSTALL_INFO[$1]}
+}
+
+update() {
+    check_tox_builder_dirs
+    if [[ $# -eq 0 ]]; then
+        update_default_modules
+    else
+        fixed_case_modules=""
+        for module in $@; do
+            case ${module,,*} in # ${word,,*} : lowercase word
+                "libsodium"|"projecttox-core"|"toxic"|"venom")
+                    echo ${FIXED_CASE_MODULES[${module,,*}]}
+                    fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
+                    ;;
+                *)
+                    echo "== Unknown module: $module =="
+                    help_and_quit
+                    ;;
+            esac
+        done
+        for module in $fixed_case_modules; do
+            update_module $module
+        done
+    fi
+}
+
+update_default_modules() {
+    for module in $DEFAULT_MODULES; do
+        update_module $module
+    done
+}
+
+build() {
+    check_tox_builder_dirs
+
+    if [[ $# -eq 0 ]]; then
+        build_default_modules
+    else
+        fixed_case_modules=""
+        for module in $@; do
+            case ${module,,*} in # ${word,,*} : lowercase word
+                "libsodium"|"projecttox-core"|"toxic"|"venom")
+                    echo ${FIXED_CASE_MODULES[${module,,*}]}
+                    fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
+                    ;;
+                *)
+                    echo "== Unknown module: $module =="
+                    help_and_quit
+                    ;;
+            esac
+        done
+        for module in $fixed_case_modules; do
+            build_module $module
+        done
+    fi
+}
+
+build_default_modules() {
+    for module in $DEFAULT_MODULES; do
+        build_module $module
+    done
+}
+
+
+uninstall_module() {
+    local line
+
+    cd "$TOX_BUILDER_DIR/checkout/$1" ||
+    quit_on_error
+
+    if [[ -f ./Makefile ]]; then
+        echo "== Uninstalling module $1 … =="
+        echo "make uninstall"
+        make uninstall
+    elif [[ -f ./build/install_manifest.txt ]]; then
+        # CMake for Venom
+        echo "== Uninstalling module $1 … =="
+        while read line
+        do
+            rm -v "$line"
+        done < ./build/install_manifest.txt
+        rm -v ./build/install_manifest.txt
+    fi
+
+    # clear installed version info
+    rm -f "$TOX_BUILDER_DIR/$1.installed"
+}
+
+run() {
+    PATH="$TOX_BUILDER_DIR/install/bin:$PATH" LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" $@
+}
+########################################################################
+#                                MAIN
+########################################################################
+
+if [[ $(id -u) -eq 0 ]]; then
+    echo "You should not run this script as user root!"
+    quit_on_error
+fi
+
+case "$1" in
+    "--help"|"-h")
+        help_and_quit
+        ;;
+    "build")
+        shift 1
+        build $@
+        ;;
+    "update")
+        shift 1
+        update $@
+        ;;
+    "run")
+        shift 1
+        run $@
+        ;;
+    *) echo "Invalid or missing arguments"
+        help_and_quit
+        ;;
+esac
