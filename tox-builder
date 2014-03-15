@@ -185,9 +185,8 @@ re-installs modules whose specified branches have been updated (by
 upstream or local commits) since the last installation.
 
   $0 run (toxic|venom)
-Run toxic or Venom from the tox-builder install
-directory with the correct LD_LIBRARY_PATH and PATH environment
-variables set."
+Run toxic or Venom from the tox-builder install directory with the
+correct environment variables set."
 
     exit
 }
@@ -422,7 +421,11 @@ uninstall_module() {
 }
 
 run() {
-    PATH="$TOX_BUILDER_DIR/install/bin:$PATH" LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" $@
+    # Setting XDG_DATA_HOME instead of XDG_DATA_DIRS work doesn't work
+    # because Venom currently only checks for system data dirs.
+    PATH="$TOX_BUILDER_DIR/install/bin:$PATH" \
+        LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" \
+        XDG_DATA_DIRS="$TOX_BUILDER_DIR/install/share:/usr/local/share/:/usr/share/" $@
 }
 ########################################################################
 #                                MAIN
