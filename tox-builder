@@ -421,11 +421,9 @@ uninstall_module() {
 }
 
 run() {
-    # Setting XDG_DATA_HOME instead of XDG_DATA_DIRS work doesn't work
-    # because Venom currently only checks for system data dirs.
     PATH="$TOX_BUILDER_DIR/install/bin:$PATH" \
         LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" \
-        XDG_DATA_DIRS="$TOX_BUILDER_DIR/install/share:/usr/local/share/:/usr/share/" $@
+	XDG_DATA_HOME="$TOX_BUILDER_DIR/install/share" $@
 }
 ########################################################################
 #                                MAIN
