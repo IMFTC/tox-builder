@@ -142,7 +142,7 @@ BUILD_CONFIGURE[toxic]="./configure\
  --with-dependency-search='$TOX_BUILDER_DIR/install'"
 BUILD_MAKE[toxic]="make && make check"
 BUILD_INSTALL[toxic]="make install"
-POST_INSTALL_INFO[toxic]="== To launch toxic run: $0 run toxic =="
+POST_INSTALL_INFO[toxic]="==> To launch toxic run: $0 run toxic"
 #
 # V E N O M
 # https://github.com/naxuroqa/Venom/blob/master/INSTALL.md#linux
@@ -154,12 +154,12 @@ BUILD_CMAKE[Venom]="mkdir build && cd build &&\
  -DCMAKE_INSTALL_PREFIX='$TOX_BUILDER_DIR/install' .."
 BUILD_MAKE[Venom]="make"
 BUILD_INSTALL[Venom]="make install"
-POST_INSTALL_INFO[Venom]="== To launch Venom run: $0 run venom =="
+POST_INSTALL_INFO[Venom]="==> To launch Venom run: $0 run venom"
 #
 ############################################################################
 
 quit_on_error() {
-    echo "== An error occurred, quitting =="
+    echo "==> An error occurred, quitting"
     exit
 }
 
@@ -200,7 +200,7 @@ check_tox_builder_dirs() {
             # Ensure the checkout and install subdirs exist
             mkdir -p "$TOX_BUILDER_DIR/checkout" &&
             mkdir -p "$TOX_BUILDER_DIR/install" &&
-            echo "== Found TOX_BUILDER_DIR: $TOX_BUILDER_DIR ==" ||
+            echo "==> Found TOX_BUILDER_DIR: $TOX_BUILDER_DIR" ||
 
             quit_on_error
         else
@@ -216,7 +216,7 @@ check_tox_builder_dirs() {
             quit_on_error
         fi
     else
-        echo "== Creating directory layout in '$TOX_BUILDER_DIR' … ==" &&
+        echo "==> Creating directory layout in '$TOX_BUILDER_DIR' …" &&
         mkdir -p "$TOX_BUILDER_DIR" &&
         # Let's be able to see that the folder was created by this script
         touch "$TOX_BUILDER_DIR/.used-by-tox-builder" &&
@@ -228,7 +228,7 @@ check_tox_builder_dirs() {
 }
 
 clone_module() {
-    echo "== Cloning module $1 … ==" &&
+    echo "==> Cloning module $1 …" &&
     cd "$TOX_BUILDER_DIR/checkout" &&
 
     echo "git clone ${GIT_URL[$1]}" &&
@@ -240,7 +240,7 @@ clone_module() {
 # Builds and installs the module if it has been updated since it was
 # last built and installed or if wasn't installed yet.
 update_module() {
-    echo "== Updating module $1 … ==" &&
+    echo "==> Updating module $1 …" &&
 
     if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
         clone_module $1
@@ -266,10 +266,10 @@ update_module() {
 
     # if the HEAD's hash is different from the installed version, rebuild
     if [[ $(cat "$TOX_BUILDER_DIR/$1.installed" 2>/dev/null) != $(git rev-parse HEAD) ]]; then
-        echo "== Module $1 has been updated =="
+        echo "==> Module $1 has been updated"
         build_module $1
     else
-        echo "== Module $1 is up to date =="
+        echo "==> Module $1 is up to date"
     fi
 }
 
@@ -277,7 +277,7 @@ update_module() {
 # updating the repo beforehand. However, it does clone the repo first,
 # if it hasn't been cloned yet.
 build_module() {
-    echo "== Building module $1 … =="
+    echo "==> Building module $1 …"
 
     if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
         clone_module $1
@@ -329,7 +329,7 @@ build_module() {
     # remember installed version
     echo $(git rev-parse HEAD) > "$TOX_BUILDER_DIR/$1.installed"
 
-    echo "== Module $1 installed successfully =="
+    echo "==> Module $1 installed successfully"
     [[ ${POST_INSTALL_INFO[$1]} ]] &&
     echo ${POST_INSTALL_INFO[$1]}
 }
@@ -347,7 +347,7 @@ update() {
                     fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
                     ;;
                 *)
-                    echo "== Unknown module: $module =="
+                    echo "==> Unknown module: $module"
                     help_and_quit
                     ;;
             esac
@@ -378,7 +378,7 @@ build() {
                     fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
                     ;;
                 *)
-                    echo "== Unknown module: $module =="
+                    echo "==> Unknown module: $module"
                     help_and_quit
                     ;;
             esac
@@ -403,12 +403,12 @@ uninstall_module() {
     quit_on_error
 
     if [[ -f ./Makefile ]]; then
-        echo "== Uninstalling module $1 … =="
+        echo "==> Uninstalling module $1 …"
         echo "make uninstall"
         make uninstall
     elif [[ -f ./build/install_manifest.txt ]]; then
         # CMake for Venom
-        echo "== Uninstalling module $1 … =="
+        echo "==> Uninstalling module $1 …"
         while read line
         do
             rm -v "$line"
