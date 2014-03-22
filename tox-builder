@@ -79,7 +79,6 @@
 #
 
 # Don't touch these
-declare -A FIXED_CASE_NAME
 declare -A GIT_URL GIT_BRANCH GIT_TAG
 declare -A BUILD_CMAKE BUILD_AUTO BUILD_CONFIGURE BUILD_MAKE
 declare -A BUILD_INSTALL POST_INSTALL_INFO
@@ -94,7 +93,7 @@ declare -A BUILD_INSTALL POST_INSTALL_INFO
 # $TOX_BUILDER_DIR
 # |-- checkout
 # |   |-- libsodium       (git repo)
-# |   |-- ProjectTox-Core (git repo)
+# |   |-- projecttox-core (git repo)
 # |   `-- toxic           (git repo)
 # `-- install             (this script will install to this folder)
 #     |-- bin
@@ -105,12 +104,11 @@ TOX_BUILDER_DIR="$HOME/tox-builder"
 #
 # Which modules should be built/updated if no module names were given
 # to 'build'/'update' commands? Modules must be in correct order!
-DEFAULT_MODULES="libsodium ProjectTox-Core toxic"
+DEFAULT_MODULES="libsodium projecttox-core toxic"
 #
 # L I B S O D I UM
 # https://github.com/jedisct1/libsodium/#installation
 GIT_URL[libsodium]="https://github.com/jedisct1/libsodium.git"
-FIXED_CASE_NAME[libsodium]='libsodium'
 GIT_TAG[libsodium]="0.4.2"
 BUILD_AUTO[libsodium]="./autogen.sh"
 BUILD_CONFIGURE[libsodium]="./configure\
@@ -121,20 +119,18 @@ BUILD_INSTALL[libsodium]="make install"
 #
 # P R O J E C T T O X - C O R E
 # https://github.com/irungentoo/ProjectTox-Core/blob/master/INSTALL.md#unix
-GIT_URL[ProjectTox-Core]="https://github.com/irungentoo/ProjectTox-Core.git"
-FIXED_CASE_NAME[projecttox-core]='ProjectTox-Core'
-GIT_BRANCH[ProjectTox-Core]="master"
-BUILD_AUTO[ProjectTox-Core]="autoreconf -i"
-BUILD_CONFIGURE[ProjectTox-Core]="./configure\
+GIT_URL[projecttox-core]="https://github.com/irungentoo/ProjectTox-Core.git"
+GIT_BRANCH[projecttox-core]="master"
+BUILD_AUTO[projecttox-core]="autoreconf -i"
+BUILD_CONFIGURE[projecttox-core]="./configure\
  --prefix='$TOX_BUILDER_DIR/install'\
  --with-dependency-search='$TOX_BUILDER_DIR/install'"
-BUILD_MAKE[ProjectTox-Core]="make"
-BUILD_INSTALL[ProjectTox-Core]="make install"
+BUILD_MAKE[projecttox-core]="make"
+BUILD_INSTALL[projecttox-core]="make install"
 #
 # T O X I C
 # http://wiki.tox.im/Toxic#Building
 GIT_URL[toxic]="https://github.com/Tox/toxic.git"
-FIXED_CASE_NAME[toxic]='toxic'
 GIT_BRANCH[toxic]="master"
 BUILD_AUTO[toxic]="autoreconf -i" # no -f here because it updates the outdated ./INSTALL which is tracked by git
 BUILD_CONFIGURE[toxic]="./configure\
@@ -146,15 +142,14 @@ POST_INSTALL_INFO[toxic]="To launch toxic run: $0 run toxic"
 #
 # V E N O M
 # https://github.com/naxuroqa/Venom/blob/master/INSTALL.md#linux
-GIT_URL[Venom]="https://github.com/naxuroqa/Venom.git"
-FIXED_CASE_NAME[venom]='Venom'
-GIT_BRANCH[Venom]="master"
-BUILD_CMAKE[Venom]="mkdir build && cd build &&\
+GIT_URL[venom]="https://github.com/naxuroqa/Venom.git"
+GIT_BRANCH[venom]="master"
+BUILD_CMAKE[venom]="mkdir build && cd build &&\
  PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig' cmake\
  -DCMAKE_INSTALL_PREFIX='$TOX_BUILDER_DIR/install' .."
-BUILD_MAKE[Venom]="make"
-BUILD_INSTALL[Venom]="make install"
-POST_INSTALL_INFO[Venom]="To launch Venom run: $0 run venom"
+BUILD_MAKE[venom]="make"
+BUILD_INSTALL[venom]="make install"
+POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
 #
 ############################################################################
 
@@ -242,8 +237,8 @@ clone_module() {
     echo_bold "Cloning module $1 …" &&
     cd "$TOX_BUILDER_DIR/checkout" &&
 
-    echo "git clone ${GIT_URL[$1]}" &&
-    git clone "${GIT_URL[$1]}" ||
+    echo "git clone ${GIT_URL[$1]} $1" &&
+    git clone "${GIT_URL[$1]}" $1 ||
 
     quit_on_error
 }
@@ -346,56 +341,33 @@ build_module() {
 }
 
 update() {
+    local modules
     check_tox_builder_dirs
-    if [[ $# -eq 0 ]]; then
-        for module in $DEFAULT_MODULES; do
-            update_module $module
-        done
+
+    if [[ -z $1 ]]; then
+        modules=$DEFAULT_MODULES
     else
-        fixed_case_modules=""
-        for module in $@; do
-            case ${module,,*} in # ${word,,*} : lowercase word
-                "libsodium"|"projecttox-core"|"toxic"|"venom")
-                    echo ${FIXED_CASE_MODULES[${module,,*}]}
-                    fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
-                    ;;
-                *)
-                    echo_bold "Unknown module: $module"
-                    help_and_quit
-                    ;;
-            esac
-        done
-        for module in $fixed_case_modules; do
-            update_module $module
-        done
+        modules="$@"
     fi
+
+    for module in $modules; do
+        update_module $module
+    done
 }
 
 build() {
+    local modules
     check_tox_builder_dirs
 
-    if [[ $# -eq 0 ]]; then
-        for module in $DEFAULT_MODULES; do
-            build_module $module
-        done
+    if [[ -z $1 ]]; then
+        modules=$DEFAULT_MODULES
     else
-        fixed_case_modules=""
-        for module in $@; do
-            case ${module,,*} in # ${word,,*} : lowercase word
-                "libsodium"|"projecttox-core"|"toxic"|"venom")
-                    echo ${FIXED_CASE_MODULES[${module,,*}]}
-                    fixed_case_modules="${fixed_case_modules} ${FIXED_CASE_NAME[${module,,*}]}"
-                    ;;
-                *)
-                    echo_bold "Unknown module: $module"
-                    help_and_quit
-                    ;;
-            esac
-        done
-        for module in $fixed_case_modules; do
-            build_module $module
-        done
+        modules="$@"
     fi
+
+    for module in $modules; do
+        build_module $module
+    done
 }
 
 uninstall_module() {
@@ -442,11 +414,11 @@ case "$1" in
         ;;
     "build")
         shift 1
-        build $@
+        build ${@,,*}
         ;;
     "update")
         shift 1
-        update $@
+        update ${@,,*}
         ;;
     "run")
         shift 1
