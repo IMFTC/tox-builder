@@ -348,7 +348,9 @@ build_module() {
 update() {
     check_tox_builder_dirs
     if [[ $# -eq 0 ]]; then
-        update_default_modules
+        for module in $DEFAULT_MODULES; do
+            update_module $module
+        done
     else
         fixed_case_modules=""
         for module in $@; do
@@ -369,17 +371,13 @@ update() {
     fi
 }
 
-update_default_modules() {
-    for module in $DEFAULT_MODULES; do
-        update_module $module
-    done
-}
-
 build() {
     check_tox_builder_dirs
 
     if [[ $# -eq 0 ]]; then
-        build_default_modules
+        for module in $DEFAULT_MODULES; do
+            build_module $module
+        done
     else
         fixed_case_modules=""
         for module in $@; do
@@ -399,13 +397,6 @@ build() {
         done
     fi
 }
-
-build_default_modules() {
-    for module in $DEFAULT_MODULES; do
-        build_module $module
-    done
-}
-
 
 uninstall_module() {
     local line
