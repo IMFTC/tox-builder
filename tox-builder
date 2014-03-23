@@ -79,7 +79,7 @@
 #
 
 # Don't touch these
-declare -A GIT_URL GIT_BRANCH GIT_TAG
+declare -A GIT_URL GIT_BRANCH GIT_TAG GIT_LOG
 declare -A BUILD_CMAKE BUILD_AUTO BUILD_CONFIGURE BUILD_MAKE
 declare -A BUILD_INSTALL POST_INSTALL_INFO
 
@@ -161,7 +161,7 @@ type tput >& /dev/null && {
 }
 
 echo_bold() {
-    echo "${bold}*** ${@} ***${boldoff}"
+    echo "${bold}${@}${boldoff}"
 }
 
 quit_on_error() {
@@ -246,9 +246,18 @@ clone_module() {
 # Builds and installs the module if it has been updated since it was
 # last built and installed or if wasn't installed yet.
 update_module() {
+    local module_changes=
+
     echo_bold "Updating module $1 …" &&
 
+    GIT_LOG[$1]=
+
     if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
+
+        # in case the repo was deleted manually forget that it had
+        # been installed
+        rm -f "$TOX_BUILDER_DIR/$1.installed"
+
         clone_module $1
     fi
 
@@ -271,9 +280,20 @@ update_module() {
     fi
 
     # if the HEAD's hash is different from the installed version, rebuild
-    if [[ $(cat "$TOX_BUILDER_DIR/$1.installed" 2>/dev/null) != $(git rev-parse HEAD) ]]; then
-        echo_bold "Module $1 has been updated"
+    old_head=$(cat "$TOX_BUILDER_DIR/$1.installed" 2>/dev/null)
+    new_head=$(git rev-parse HEAD)
+    if [[ $new_head != $old_head ]]; then
+        if [[ -z $old_head ]]; then
+            echo_bold "Module $1 has not been intsalled yet"
+            GIT_LOG[$1]="New install"
+        else
+            echo_bold "Module $1 has been updated"
+            # store short log of the changes for later display
+            GIT_LOG[$1]=$(git log --oneline ${old_head}..${new_head} 2>&1)
+        fi
+
         build_module $1
+
     else
         echo_bold "Module $1 is already up to date"
     fi
@@ -342,6 +362,7 @@ build_module() {
 
 update() {
     local modules
+    local have_updates=
     check_tox_builder_dirs
 
     if [[ -z $1 ]]; then
@@ -353,6 +374,19 @@ update() {
     for module in $modules; do
         update_module $module
     done
+
+    echo_bold "=== UPDATE SUMMARY ==="
+    for module in $modules; do
+        if [[ -n ${GIT_LOG[$module]} ]]; then
+            echo_bold "Changes for $module:"
+            echo "${GIT_LOG[$module]}"
+            have_updates="yes"
+        fi
+    done
+
+    if [[ -z $have_updates ]]; then
+        echo_bold "No module was updated"
+    fi
 }
 
 build() {
@@ -397,7 +431,7 @@ uninstall_module() {
 run() {
     PATH="$TOX_BUILDER_DIR/install/bin:$PATH" \
         LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" \
-	XDG_DATA_HOME="$TOX_BUILDER_DIR/install/share" $@
+        XDG_DATA_HOME="$TOX_BUILDER_DIR/install/share" $@
 }
 ########################################################################
 #                                MAIN
