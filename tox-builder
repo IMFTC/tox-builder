@@ -206,7 +206,7 @@ check_tox_builder_dirs() {
             # Ensure the checkout and install subdirs exist
             mkdir -p "$TOX_BUILDER_DIR/checkout" &&
             mkdir -p "$TOX_BUILDER_DIR/install" &&
-            echo_bold "Found TOX_BUILDER_DIR: $TOX_BUILDER_DIR" ||
+            echo_bold "Using directory: $TOX_BUILDER_DIR" ||
 
             quit_on_error
         else
