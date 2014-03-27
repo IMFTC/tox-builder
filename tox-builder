@@ -448,11 +448,11 @@ case "$1" in
         ;;
     "build")
         shift 1
-        build ${@,,*}
+        build ${@,,}
         ;;
     "update")
         shift 1
-        update ${@,,*}
+        update ${@,,}
         ;;
     "run")
         shift 1
