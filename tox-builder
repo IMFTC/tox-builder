@@ -18,62 +18,59 @@
 # along with Tox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#                               README
-#
-# tox-builder automatically downloads, builds and installs toxic and
-# friends inside your $HOME directory.
-#
-# What tox-builder is *NOT*: It's not made for installing system wide
-# in /usr/local and the like!
-#
-#                    INSTALLING THE TOXIC CLIENT
+# === INSTALLING TOXIC ===
 #
 # If you have all system dependencies installed (most likely you have
 # not yet) all you need to do to install libsodium, ProjectTox-Core
-# and toxic is running:
+# and toxic from their git repositories on github.com is running:
 #
-#   tox-builder build
+#   tox-builder update
 #
-# After successfully running this script, you can run toxic with:
+# (Should you hit an error because of missing dependencies you can
+# install them and then simply run this command again.)
+#
+# After successfully running the above command, you can run toxic with:
 #
 #   tox-builder run toxic
 #
 # This will launch toxic with the LD_LIBRARY_PATH and PATH env
 # variables set to include the installation path.
 #
-#                          INSTALLING VENOM
 #
-# Venom is not installed by default by the command above. If you want to
-# install Venom, you have to additionally run:
+# === UPDATING YOUR INSTALLATION ===
 #
-#   tox-builder build venom
-#
-# And to run Venum:
-#
-#   tox-builder run venom
-#
-#                              UPDATING
-#
-# To update your local installation to include the latest upstream
-# changes run:
+# If you later want to update your local installation to include the
+# latest upstream changes, simply run:
 #
 #   tox-builder update
 #
-# This is similar to the 'build' command, but it will only re-build
-# and re-install modules whose git HEAD has changed since the last
-# install; that is, if they have new local or upstream commits on the
-# specified branch, and modules that haven't been installed yet.
+# again. This will git pull from each of the github repositories and
+# rebuild and reinstall all modules which have new commits compared to
+# their installed versions or whose installed versions had been
+# tainted (contained uncommited changes). The 'update' command
+# runs git pull --rebase, so it will also respect and install your
+# local commits, if any.
 #
-# NOTE: You could also just use the 'update' command for the first
-# checkout, build and install instead of the 'build' command.
 #
-#                             LOCATIONS
+# === BUILD COMMAND ===
 #
-# By default tox-builder clones the git repos of all modules to
+# You can use the 'build' command instead of the 'update' command to
+# force an unconditional uninstall/rebuild/install from the local
+# source directories without running any git commands beforehand, so
+# the code of the specified modules will be compiled and installed as
+# it is. This is useful if you are hacking any of the components
+# yourself without making local git commits.
+#
+#
+# === LOCATIONS ===
+#
+# By default tox-builder clones the git repositories of all modules to
+#
 #   $HOME/tox-builder/checkout/
 #
 # and installs to
-#  $HOME/tox-builder/install/
+#
+#   $HOME/tox-builder/install/
 #
 # TODO: Install system dependencies depending on the OS
 #
@@ -151,6 +148,8 @@ BUILD_MAKE[venom]="make"
 BUILD_INSTALL[venom]="make install"
 POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
 #
+#
+AVAILABLE_MODULES="libsodium projecttox-core toxic venom"
 ############################################################################
 
 bold=
@@ -171,26 +170,31 @@ quit_on_error() {
 
 help_and_quit() {
     echo "\
-Usage:
+Usage: tox-builder (update|build) [MODULE-NAME...]
+Valid MODULE-NAME values: $AVAILABLE_MODULES
 
-  $0 build
-Build and install/re-install libsodium, ProjectTox-Core and
-toxic. Previously with tox-builder installed versions will be
-uninstalled beforehand.
+  tox-builder update
+  tox-builder update MODULE-NAME...
 
-  $0 build MODULE-NAME...
-Build and install/re-install only the
-given modules. Previously with tox-builder installed versions will be
-uninstalled beforehand. Currently valid MODULE-NAME values: libsodium,
-projecttox-core, toxic, venom
+Reinstall (or install for the first time, if not installed yet) the
+given modules to include their new upstream/local commits. If no
+module names are given, the following ones will be used:
 
-  $0 update
-  $0 update MODULE-NAME...
-Same like the build command, except that it only re-builds and
-re-installs modules whose specified branches have been updated (by
-upstream or local commits) since the last installation.
+$DEFAULT_MODULES
 
-  $0 run (toxic|venom)
+  tox-builder build
+  tox-builder build MODULE-NAME...
+
+Force an unconditional uninstall/rebuild/install from the local source
+directories of the given modules without running any git commands
+beforehand, so the code of the specified modules will be compiled and
+installed as it is. If no module names are given, the following ones
+will be used:
+
+$DEFAULT_MODULES
+
+  tox-builder run (toxic|venom)
+
 Run toxic or Venom from the tox-builder install directory with the
 correct environment variables set."
 
@@ -247,6 +251,8 @@ clone_module() {
 # last built and installed or if wasn't installed yet.
 update_module() {
     local module_changes=
+    local old_head
+    local new_head
 
     echo_bold "Updating module $1 …" &&
 
@@ -279,17 +285,25 @@ update_module() {
         quit_on_error
     fi
 
-    # if the HEAD's hash is different from the installed version, rebuild
     old_head=$(cat "$TOX_BUILDER_DIR/$1.installed" 2>/dev/null)
+
     new_head=$(git rev-parse HEAD)
+
     if [[ $new_head != $old_head ]]; then
+	# if the HEAD's hash is different from the installed version
+	# or there are uncommited changes, rebuild
         if [[ -z $old_head ]]; then
             echo_bold "Module $1 has not been intsalled yet"
             GIT_LOG[$1]="New install"
         else
             echo_bold "Module $1 has been updated"
             # store short log of the changes for later display
-            GIT_LOG[$1]=$(git log --oneline ${old_head}..${new_head} 2>&1)
+	    if [[ $old_head == *-tainted ]]; then
+		GIT_LOG[$1]="Previous install was tainted, installed now: ${new_head}"
+	    else
+		GIT_LOG[$1]=$(git log --oneline ${old_head}..${new_head} 2>&1)
+	    fi
+	    
         fi
 
         build_module $1
@@ -303,6 +317,8 @@ update_module() {
 # updating the repo beforehand. However, it does clone the repo first,
 # if it hasn't been cloned yet.
 build_module() {
+    local new_head
+
     echo_bold "Building module $1 …"
 
     if [[ ! -d "$TOX_BUILDER_DIR/checkout/$1" ]]; then
@@ -353,9 +369,12 @@ build_module() {
     }
 
     # remember installed version
-    echo $(git rev-parse HEAD) > "$TOX_BUILDER_DIR/$1.installed"
+    new_head=$(git rev-parse HEAD)
+    git diff --quiet HEAD || new_head="${new_head}-tainted"
 
-    echo_bold "Module $1 installed successfully"
+    echo $new_head > "$TOX_BUILDER_DIR/$1.installed"
+
+    echo_bold "Module ${1} installed successfully (${new_head})"
     [[ ${POST_INSTALL_INFO[$1]} ]] &&
     echo ${POST_INSTALL_INFO[$1]}
 }
@@ -443,7 +462,7 @@ if [[ $(id -u) -eq 0 ]]; then
 fi
 
 case "$1" in
-    "--help"|"-h")
+    "--help"|"-h"|"help")
         help_and_quit
         ;;
     "build")
@@ -458,7 +477,7 @@ case "$1" in
         shift 1
         run $@
         ;;
-    *) echo "Invalid or missing arguments"
+    *) echo -e "Invalid or missing arguments\n"
         help_and_quit
         ;;
 esac
