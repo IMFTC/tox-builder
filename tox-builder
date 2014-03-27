@@ -15,7 +15,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+# along with tox-builder.  If not, see <http://www.gnu.org/licenses/>.
 
 
 # === INSTALLING TOXIC ===
@@ -37,6 +37,16 @@
 # variables set to include the installation path.
 #
 #
+# === VENOM ===
+#
+# If you also want to build and install the gtk+ client Venom, you can
+# append 'venom' to the DEFAULT_MODULES variable in the CONFIG section
+# below and then run 'tox-builder update'. As you might have
+# guessed, you can then launch venom with:
+#
+#  tox-builder run venom
+#
+#
 # === UPDATING YOUR INSTALLATION ===
 #
 # If you later want to update your local installation to include the
@@ -45,21 +55,21 @@
 #   tox-builder update
 #
 # again. This will git pull from each of the github repositories and
-# rebuild and reinstall all modules which have new commits compared to
+# rebuild and reinstall all modules whose configured branch (see
+# CONFIG section below) has new (remote or local) commits compared to
 # their installed versions or whose installed versions had been
-# tainted (contained uncommited changes). The 'update' command
-# runs git pull --rebase, so it will also respect and install your
-# local commits, if any.
+# tainted (contained uncommited changes).
 #
 #
 # === BUILD COMMAND ===
 #
 # You can use the 'build' command instead of the 'update' command to
-# force an unconditional uninstall/rebuild/install from the local
-# source directories without running any git commands beforehand, so
-# the code of the specified modules will be compiled and installed as
-# it is. This is useful if you are hacking any of the components
-# yourself without making local git commits.
+# force an unconditional uninstall/rebuild/install of the given
+# modules from the local source directories without running any git
+# commands beforehand, so the code of the specified modules will be
+# compiled and installed as it is. This is useful if you are hacking
+# any of the components yourself without making local git commits
+# (Though not making git commits yourself is a bad idea ;-)).
 #
 #
 # === LOCATIONS ===
@@ -100,7 +110,8 @@ declare -A BUILD_INSTALL POST_INSTALL_INFO
 TOX_BUILDER_DIR="$HOME/tox-builder"
 #
 # Which modules should be built/updated if no module names were given
-# to 'build'/'update' commands? Modules must be in correct order!
+# to 'build'/'update' commands? Modules must be in correct order! If
+# you want to build Venom by default as well, append venom to this list:
 DEFAULT_MODULES="libsodium projecttox-core toxic"
 #
 # L I B S O D I UM
@@ -290,20 +301,20 @@ update_module() {
     new_head=$(git rev-parse HEAD)
 
     if [[ $new_head != $old_head ]]; then
-	# if the HEAD's hash is different from the installed version
-	# or there are uncommited changes, rebuild
+        # if the HEAD's hash is different from the installed version
+        # or there are uncommited changes, rebuild
         if [[ -z $old_head ]]; then
             echo_bold "Module $1 has not been intsalled yet"
             GIT_LOG[$1]="New install"
         else
             echo_bold "Module $1 has been updated"
             # store short log of the changes for later display
-	    if [[ $old_head == *-tainted ]]; then
-		GIT_LOG[$1]="Previous install was tainted, installed now: ${new_head}"
-	    else
-		GIT_LOG[$1]=$(git log --oneline ${old_head}..${new_head} 2>&1)
-	    fi
-	    
+            if [[ $old_head == *-tainted ]]; then
+                GIT_LOG[$1]="Previous install was tainted, installed now: ${new_head}"
+            else
+                GIT_LOG[$1]=$(git log --oneline ${old_head}..${new_head} 2>&1)
+            fi
+
         fi
 
         build_module $1
