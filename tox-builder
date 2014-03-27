@@ -415,7 +415,7 @@ update() {
     done
 
     if [[ -z $have_updates ]]; then
-        echo_bold "No module was updated"
+        echo "No modules have been updated"
     fi
 }
 
