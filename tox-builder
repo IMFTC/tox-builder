@@ -207,7 +207,12 @@ $DEFAULT_MODULES
   tox-builder run (toxic|venom)
 
 Run toxic or Venom from the tox-builder install directory with the
-correct environment variables set."
+correct environment variables set.
+
+  tox-builder info
+
+Show information about configuration and module states
+"
 
     exit
 }
@@ -463,6 +468,37 @@ run() {
         LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" \
         XDG_DATA_HOME="$TOX_BUILDER_DIR/install/share" $@
 }
+
+get_installed_hash() {
+    cat "$TOX_BUILDER_DIR/${1}.installed" 2>/dev/null
+}
+
+info() {
+    local module
+    local hash
+
+    echo "target directory : $TOX_BUILDER_DIR"
+    echo "available modules: $AVAILABLE_MODULES"
+    echo "default modules  : $DEFAULT_MODULES"
+    echo
+    echo "module states:"
+    for module in $AVAILABLE_MODULES; do
+        printf %-28s "${bold}${module}${boldoff}: "
+        if [[ ! -d "$TOX_BUILDER_DIR/checkout/$module" ]]; then
+            # not cloned yet
+            echo -ne "cloned: NO  "
+        else
+            echo -ne "cloned: YES "
+        fi
+
+        hash=$(get_installed_hash $module)
+        if [[ -n $hash ]]; then
+            echo "installed: YES ($hash)"
+        else
+            echo "installed: NO"
+        fi
+    done
+}
 ########################################################################
 #                                MAIN
 ########################################################################
@@ -487,6 +523,10 @@ case "$1" in
     "run")
         shift 1
         run $@
+        ;;
+    "info")
+        shift 1
+        info $@
         ;;
     *) echo -e "Invalid or missing arguments\n"
         help_and_quit
