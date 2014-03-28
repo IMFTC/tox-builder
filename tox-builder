@@ -479,7 +479,7 @@ info() {
 
     echo "target directory : $TOX_BUILDER_DIR"
     echo "available modules: $AVAILABLE_MODULES"
-    echo "default modules  : $DEFAULT_MODULES"
+    echo_bold "default modules  : $DEFAULT_MODULES"
     echo
     echo "module states:"
     for module in $AVAILABLE_MODULES; do
