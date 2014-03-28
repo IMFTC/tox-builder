@@ -181,7 +181,8 @@ quit_on_error() {
 
 help_and_quit() {
     echo "\
-Usage: tox-builder (update|build) [MODULE-NAME...]
+Usage: tox-builder (update|build|info) [MODULE-NAME...]
+
 Valid MODULE-NAME values: $AVAILABLE_MODULES
 
   tox-builder update
