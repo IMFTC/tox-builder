@@ -477,11 +477,10 @@ info() {
     local module
     local hash
 
-    echo "target directory : $TOX_BUILDER_DIR"
-    echo "available modules: $AVAILABLE_MODULES"
+    echo_bold "target directory : $TOX_BUILDER_DIR"
     echo_bold "default modules  : $DEFAULT_MODULES"
+    echo_bold "available modules: $AVAILABLE_MODULES"
     echo
-    echo "module states:"
     for module in $AVAILABLE_MODULES; do
         printf %-28s "${bold}${module}${boldoff}: "
         if [[ ! -d "$TOX_BUILDER_DIR/checkout/$module" ]]; then
