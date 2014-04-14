@@ -160,7 +160,7 @@ BUILD_INSTALL[venom]="make install"
 POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
 #
 #
-AVAILABLE_MODULES="libsodium projecttox-core toxic venom"
+AVAILABLE_MODULES=(libsodium projecttox-core toxic venom)
 ############################################################################
 
 bold=
@@ -183,7 +183,7 @@ help_and_quit() {
     echo "\
 Usage: tox-builder (update|build|info) [MODULE-NAME...]
 
-Valid MODULE-NAME values: $AVAILABLE_MODULES
+Valid MODULE-NAME values: ${AVAILABLE_MODULES[@]}
 
   tox-builder update
   tox-builder update MODULE-NAME...
@@ -216,6 +216,27 @@ Show information about configuration and module states
 "
 
     exit
+}
+
+check_module_names() {
+    local -a invalid_modules
+    local is_valid
+    for module in "$@"; do
+        is_valid="n"
+        for available_module in "${AVAILABLE_MODULES[@]}"; do
+            if [[ $module == $available_module ]]; then
+                is_valid="y"
+                break
+            fi
+        done
+        [[ $is_valid == "n" ]] && invalid_modules+=("$module")
+    done
+    if [[ ${#invalid_modules[@]} -gt 0 ]]; then
+        echo "Invalid module names: ${invalid_modules[@]}"
+        echo "Valid module names are: ${AVAILABLE_MODULES[@]}"
+        echo "For more info use: tox-builder help"
+        exit
+    fi
 }
 
 # Checks whether $TOX_BUILDER_DIR/{checkout,install} exist and are
@@ -482,7 +503,7 @@ info() {
     echo_bold "default modules  : $DEFAULT_MODULES"
     echo_bold "available modules: $AVAILABLE_MODULES"
     echo
-    for module in $AVAILABLE_MODULES; do
+    for module in "${AVAILABLE_MODULES[@]}"; do
         printf %-28s "${bold}${module}${boldoff}: "
         if [[ ! -d "$TOX_BUILDER_DIR/checkout/$module" ]]; then
             # not cloned yet
@@ -514,10 +535,12 @@ case "$1" in
         ;;
     "build")
         shift 1
+        check_module_names $@
         build ${@,,}
         ;;
     "update")
         shift 1
+        check_module_names $@
         update ${@,,}
         ;;
     "run")
@@ -526,9 +549,9 @@ case "$1" in
         ;;
     "info")
         shift 1
-        info $@
+        info $@  # $@ currently ignored
         ;;
-    *) echo -e "Invalid or missing arguments\n"
+    *) echo "Invalid command: $1"
         help_and_quit
         ;;
 esac
