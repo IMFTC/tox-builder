@@ -121,7 +121,6 @@ GIT_TAG[libsodium]="0.4.2"
 BUILD_AUTO[libsodium]="./autogen.sh"
 BUILD_CONFIGURE[libsodium]="./configure\
  --prefix='$TOX_BUILDER_DIR/install'"
-BUILD_MAKE[libsodium]="make && make check"
 BUILD_MAKE[libsodium]="make"
 BUILD_INSTALL[libsodium]="make install"
 #
