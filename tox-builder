@@ -89,6 +89,7 @@
 declare -A GIT_URL GIT_BRANCH GIT_TAG GIT_LOG
 declare -A BUILD_CMAKE BUILD_AUTO BUILD_CONFIGURE BUILD_MAKE
 declare -A BUILD_INSTALL POST_INSTALL_INFO
+declare -a AVAILABLE_MODULES=()
 
 ########################################################################
 #                               CONFIG
@@ -123,6 +124,7 @@ BUILD_CONFIGURE[libsodium]="./configure\
  --prefix='$TOX_BUILDER_DIR/install'"
 BUILD_MAKE[libsodium]="make"
 BUILD_INSTALL[libsodium]="make install"
+AVAILABLE_MODULES+=(libsodium)
 #
 # P R O J E C T T O X - C O R E
 # https://github.com/irungentoo/ProjectTox-Core/blob/master/INSTALL.md#unix
@@ -134,6 +136,7 @@ BUILD_CONFIGURE[projecttox-core]="./configure\
  --with-dependency-search='$TOX_BUILDER_DIR/install'"
 BUILD_MAKE[projecttox-core]="make"
 BUILD_INSTALL[projecttox-core]="make install"
+AVAILABLE_MODULES+=(projecttox-core)
 #
 # T O X I C
 # http://wiki.tox.im/Toxic#Building
@@ -146,6 +149,7 @@ BUILD_CONFIGURE[toxic]="./configure\
 BUILD_MAKE[toxic]="make && make check"
 BUILD_INSTALL[toxic]="make install"
 POST_INSTALL_INFO[toxic]="To launch toxic run: $0 run toxic"
+AVAILABLE_MODULES+=(toxic)
 #
 # V E N O M
 # https://github.com/naxuroqa/Venom/blob/master/INSTALL.md#linux
@@ -157,9 +161,9 @@ BUILD_CMAKE[venom]="mkdir build && cd build &&\
 BUILD_MAKE[venom]="make"
 BUILD_INSTALL[venom]="make install"
 POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
+AVAILABLE_MODULES+=(venom)
 #
 #
-AVAILABLE_MODULES=(libsodium projecttox-core toxic venom)
 ############################################################################
 
 bold=
