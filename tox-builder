@@ -142,12 +142,10 @@ AVAILABLE_MODULES+=(projecttox-core)
 # http://wiki.tox.im/Toxic#Building
 GIT_URL[toxic]="https://github.com/Tox/toxic.git"
 GIT_BRANCH[toxic]="master"
-BUILD_AUTO[toxic]="autoreconf -i" # no -f here because it updates the outdated ./INSTALL which is tracked by git
-BUILD_CONFIGURE[toxic]="./configure\
- --prefix='$TOX_BUILDER_DIR/install'\
- --with-dependency-search='$TOX_BUILDER_DIR/install'"
-BUILD_MAKE[toxic]="make && make check"
-BUILD_INSTALL[toxic]="make install"
+BUILD_MAKE[toxic]="PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig'\
+ make -C build PREFIX='$TOX_BUILDER_DIR/install'"
+BUILD_INSTALL[toxic]="PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig'\
+ make -C build install PREFIX='$TOX_BUILDER_DIR/install'"
 POST_INSTALL_INFO[toxic]="To launch toxic run: $0 run toxic"
 AVAILABLE_MODULES+=(toxic)
 #
