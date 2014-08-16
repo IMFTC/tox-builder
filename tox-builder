@@ -21,7 +21,7 @@
 # === INSTALLING TOXIC ===
 #
 # If you have all system dependencies installed (most likely you have
-# not yet) all you need to do to install libsodium, ProjectTox-Core
+# not yet) all you need to do to install libsodium, toxcore
 # and toxic from their git repositories on github.com is running:
 #
 #   tox-builder update
@@ -101,7 +101,7 @@ declare -a AVAILABLE_MODULES=()
 # $TOX_BUILDER_DIR
 # |-- checkout
 # |   |-- libsodium       (git repo)
-# |   |-- projecttox-core (git repo)
+# |   |-- toxcore         (git repo)
 # |   `-- toxic           (git repo)
 # `-- install             (this script will install to this folder)
 #     |-- bin
@@ -113,7 +113,7 @@ TOX_BUILDER_DIR="$HOME/tox-builder"
 # Which modules should be built/updated if no module names were given
 # to 'build'/'update' commands? Modules must be in correct order! If
 # you want to build Venom by default as well, append venom to this list:
-DEFAULT_MODULES="libsodium projecttox-core toxic"
+DEFAULT_MODULES="libsodium toxcore toxic"
 #
 # L I B S O D I UM
 # https://github.com/jedisct1/libsodium/#installation
@@ -127,16 +127,16 @@ BUILD_INSTALL[libsodium]="make install"
 AVAILABLE_MODULES+=(libsodium)
 #
 # P R O J E C T T O X - C O R E
-# https://github.com/irungentoo/ProjectTox-Core/blob/master/INSTALL.md#unix
-GIT_URL[projecttox-core]="https://github.com/irungentoo/ProjectTox-Core.git"
-GIT_BRANCH[projecttox-core]="master"
-BUILD_AUTO[projecttox-core]="autoreconf -i"
-BUILD_CONFIGURE[projecttox-core]="./configure\
+# https://github.com/irungentoo/toxcore/blob/master/INSTALL.md#unix
+GIT_URL[toxcore]="https://github.com/irungentoo/toxcore.git"
+GIT_BRANCH[toxcore]="master"
+BUILD_AUTO[toxcore]="autoreconf -i"
+BUILD_CONFIGURE[toxcore]="./configure\
  --prefix='$TOX_BUILDER_DIR/install'\
  --with-dependency-search='$TOX_BUILDER_DIR/install'"
-BUILD_MAKE[projecttox-core]="make"
-BUILD_INSTALL[projecttox-core]="make install"
-AVAILABLE_MODULES+=(projecttox-core)
+BUILD_MAKE[toxcore]="make"
+BUILD_INSTALL[toxcore]="make install"
+AVAILABLE_MODULES+=(toxcore)
 #
 # T O X I C
 # http://wiki.tox.im/Toxic#Building
