@@ -27,7 +27,7 @@
 #   tox-builder update
 #
 # (Should you hit an error because of missing dependencies you can
-# install them and then simply run this command again.)
+# install them and then run this command again.)
 #
 # After successfully running the above command, you can run toxic with:
 #
@@ -37,28 +37,29 @@
 # variables set to include the installation path.
 #
 #
-# === VENOM ===
+# === VENOM and NEULAND ===
 #
-# If you also want to build and install the gtk+ client Venom, you can
-# append 'venom' to the DEFAULT_MODULES variable in the CONFIG section
-# below and then run 'tox-builder update'. As you might have
-# guessed, you can then launch venom with:
+# If you also want to build and install the gtk+ clients Venom and/or
+# Neuland, you can append 'venom' and/or 'neuland' to the DEFAULT_MODULES
+# variable in the CONFIG section below and then run 'tox-builder
+# update'. As you might have guessed, you can then launch
+# venom or neuland with:
 #
-#  tox-builder run venom
+#  tox-builder run (venom|neuland)
 #
 #
 # === UPDATING YOUR INSTALLATION ===
 #
 # If you later want to update your local installation to include the
-# latest upstream changes, simply run:
+# latest upstream changes run:
 #
 #   tox-builder update
 #
-# again. This will git pull from each of the github repositories and
-# rebuild and reinstall all modules whose configured branch (see
-# CONFIG section below) has new (remote or local) commits compared to
-# their installed versions or whose installed versions had been
-# tainted (contained uncommited changes).
+# again. This will run git pull --rebase for each of the github
+# repositories and rebuild and reinstall all modules whose configured
+# branch (see CONFIG section below) has new (remote or local) commits
+# compared to their installed versions or whose installed versions had
+# been tainted (contained uncommited changes).
 #
 #
 # === BUILD COMMAND ===
@@ -160,6 +161,16 @@ BUILD_MAKE[venom]="make"
 BUILD_INSTALL[venom]="make install"
 POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
 AVAILABLE_MODULES+=(venom)
+#
+# N E U L A N D
+GIT_URL[neuland]="https://github.com/IMFTC/neuland.git"
+GIT_BRANCH[neuland]="master"
+BUILD_CONFIGURE[neuland]="PKG_CONFIG_PATH='${TOX_BUILDER_DIR}/install/lib/pkgconfig' ./autogen.sh\
+ --prefix='$TOX_BUILDER_DIR/install'"
+BUILD_MAKE[neuland]="make"
+BUILD_INSTALL[neuland]="make install"
+POST_INSTALL_INFO[neuland]="To launch Neuland run: $0 run neuland"
+AVAILABLE_MODULES+=(neuland)
 #
 #
 ############################################################################
