@@ -488,7 +488,7 @@ uninstall_module() {
 
 run() {
     PATH="$TOX_BUILDER_DIR/install/bin:$PATH" \
-        LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib" \
+        LD_LIBRARY_PATH="${TOX_BUILDER_DIR}/install/lib:${LD_LIBRARY_PATH}" \
         XDG_DATA_HOME="$TOX_BUILDER_DIR/install/share" $@
 }
 
