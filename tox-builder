@@ -143,10 +143,8 @@ AVAILABLE_MODULES+=(toxcore)
 # http://wiki.tox.im/Toxic#Building
 GIT_URL[toxic]="https://github.com/Tox/toxic.git"
 GIT_BRANCH[toxic]="master"
-BUILD_MAKE[toxic]="PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig'\
- make -C build PREFIX='$TOX_BUILDER_DIR/install'"
-BUILD_INSTALL[toxic]="PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig'\
- make -C build install PREFIX='$TOX_BUILDER_DIR/install'"
+BUILD_MAKE[toxic]="make -C build PREFIX='$TOX_BUILDER_DIR/install'"
+BUILD_INSTALL[toxic]="make -C build install PREFIX='$TOX_BUILDER_DIR/install'"
 POST_INSTALL_INFO[toxic]="To launch toxic run: $0 run toxic"
 AVAILABLE_MODULES+=(toxic)
 #
@@ -155,8 +153,7 @@ AVAILABLE_MODULES+=(toxic)
 GIT_URL[venom]="https://github.com/naxuroqa/Venom.git"
 GIT_BRANCH[venom]="master"
 BUILD_CMAKE[venom]="mkdir build && cd build &&\
- PKG_CONFIG_PATH='$TOX_BUILDER_DIR/install/lib/pkgconfig' cmake\
- -DCMAKE_INSTALL_PREFIX='$TOX_BUILDER_DIR/install' .."
+ cmake -DCMAKE_INSTALL_PREFIX='$TOX_BUILDER_DIR/install' .."
 BUILD_MAKE[venom]="make"
 BUILD_INSTALL[venom]="make install"
 POST_INSTALL_INFO[venom]="To launch Venom run: $0 run venom"
@@ -165,7 +162,7 @@ AVAILABLE_MODULES+=(venom)
 # N E U L A N D
 GIT_URL[neuland]="https://github.com/IMFTC/neuland.git"
 GIT_BRANCH[neuland]="master"
-BUILD_CONFIGURE[neuland]="PKG_CONFIG_PATH='${TOX_BUILDER_DIR}/install/lib/pkgconfig' ./autogen.sh\
+BUILD_CONFIGURE[neuland]="./autogen.sh\
  --prefix='$TOX_BUILDER_DIR/install'"
 BUILD_MAKE[neuland]="make"
 BUILD_INSTALL[neuland]="make install"
@@ -174,6 +171,8 @@ AVAILABLE_MODULES+=(neuland)
 #
 #
 ############################################################################
+
+export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:$TOX_BUILDER_DIR/install/lib/pkgconfig"
 
 bold=
 boldoff=
