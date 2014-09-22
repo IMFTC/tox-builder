@@ -38,7 +38,7 @@ tox-builder run toxic
    variables set to include the installation path.
 
 
-*** Venom and Neuland
+*** Installing Venom and Neuland
 
    If you also want to build and install the gtk+ clients Venom and/or
    Neuland, you can append 'venom' and/or 'neuland' to the
@@ -64,7 +64,7 @@ tox-builder update
    had been tainted (contained uncommited changes).
 
 
-*** The build command
+*** Forced rebuilding
 
     You can use the =build= command instead of the =update= command to
     force an unconditional uninstall/rebuild/install of the given
