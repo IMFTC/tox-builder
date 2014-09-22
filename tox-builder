@@ -328,6 +328,9 @@ update_module() {
 
         quit_on_error
     elif [[ $GIT_TAG[$1] ]]; then
+        echo "git fetch origin" &&
+        git fetch origin &&
+
         echo "git checkout ${GIT_TAG[$1]}" &&
         git checkout "${GIT_TAG[$1]}" ||
 
