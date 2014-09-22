@@ -81,6 +81,5 @@ tox-builder update
 *** TODO
    - Install system dependencies depending on the OS
    - Support uninstalling
-   - Separate config file
 
 #+OPTIONS: ^:{}
