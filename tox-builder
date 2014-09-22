@@ -175,7 +175,7 @@ check_module_names() {
         echo -n "Checking default module names ... "
         modules="$DEFAULT_MODULES"
     else
-        echo -n "Checking module name from command line ... "
+        echo -n "Checking module names from command line ... "
         modules="$@"
     fi
 
