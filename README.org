@@ -1,0 +1,81 @@
+* tox-builder
+  tox-builder is a bash script for *installing*, *updating*
+  and *running* toxcore and UI clients from their git repositories. By
+  default, =tox-builder= only creates files inside your =$HOME=, so
+  you don't have to mess with your system and don't need root
+  access. The default locations for the git repository clones and the
+  installation tree are =$HOME/tox-builder/checkout/= and
+  =$HOME/tox-builder/install/=.
+
+  The repos used by default are:
+  - https://github.com/jedisct1/libsodium.git
+  - https://github.com/irungentoo/toxcore.git
+  - https://github.com/Tox/toxic.git
+
+  Additinally used when requested:
+  - https://github.com/naxuroqa/Venom.git
+  - https://github.com/IMFTC/neuland.git
+
+** Using =tox-builder=
+
+*** Installing Toxic
+   By default, =tox-builder= installs libsodium, toxcore and toxic.
+   If you have all system dependencies installed (most likely you have
+   not yet) all you need to do to install libsodium, toxcore and toxic
+   from their git repositories on github.com is running:
+#+BEGIN_SRC shell
+tox-builder update
+#+END_SRC
+   *Note*: Should you hit an error because of missing dependencies you can
+   install them from your distro's repos now and then run this command
+   again.
+
+   After successfully running the above command, you can run toxic with:
+#+BEGIN_SRC shell
+tox-builder run toxic
+#+END_SRC
+   This will launch toxic with the =LD_LIBRARY_PATH= and =PATH= env
+   variables set to include the installation path.
+
+
+*** Venom and Neuland
+
+   If you also want to build and install the gtk+ clients Venom and/or
+   Neuland, you can append 'venom' and/or 'neuland' to the
+   =DEFAULT_MODULES= variable in the CONFIG section inside the
+   tox-builder script and then run 'tox-builder update'. As you might
+   have guessed, you can then launch venom or neuland with:
+#+BEGIN_SRC shell
+tox-builder run (venom|neuland)
+#+END_SRC
+
+
+*** Updating your installation
+
+   If you later want to update your local installation to include the
+   latest upstream changes run:
+#+BEGIN_SRC shell
+tox-builder update
+#+END_SRC
+   again. This will run git pull --rebase for each of the github
+   repositories and rebuild and reinstall all modules whose configured
+   branch (see CONFIG section below) has new (remote or local) commits
+   compared to their installed versions or whose installed versions
+   had been tainted (contained uncommited changes).
+
+
+*** The =build= command
+
+    You can use the =build= command instead of the =update= command to
+    force an unconditional uninstall/rebuild/install of the given
+    modules from the local source directories without running any git
+    commands beforehand, so the code of the specified modules will be
+    compiled and installed as it is. This is useful if you are hacking
+    any of the components yourself without making local git commits
+    (Though not making git commits yourself is a bad idea ;-)).
+
+*** TODO
+   - Install system dependencies depending on the OS
+   - Support uninstalling
+
+#+OPTIONS: ^:{}
