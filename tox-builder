@@ -106,9 +106,11 @@ AVAILABLE_MODULES+=(neuland)
 
 export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:$TOX_BUILDER_DIR/install/lib/pkgconfig"
 
+# If output is connected to a terminal use bold text
+# for important messages.
 bold=
 boldoff=
-type tput >& /dev/null && {
+type tput >& /dev/null && [[ -t 1 && -t 2 ]] && {
     bold=$(tput bold 2>/dev/null)
     boldoff=$(tput sgr0 2>/dev/null)
 }
