@@ -17,12 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with tox-builder.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# Don't touch these
 declare -A GIT_URL GIT_BRANCH GIT_TAG GIT_LOG
 declare -A BUILD_CMAKE BUILD_AUTO BUILD_CONFIGURE BUILD_MAKE
 declare -A BUILD_INSTALL POST_INSTALL_INFO
 declare -a AVAILABLE_MODULES=()
+
+# Use this config file to overwrite any of the varables defined in the
+# CONFIG section below.
+CONFIG_FILE="$HOME/.config/tox-builder"
 
 ########################################################################
 #                               CONFIG
@@ -104,8 +106,6 @@ AVAILABLE_MODULES+=(neuland)
 #
 ############################################################################
 
-export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:$TOX_BUILDER_DIR/install/lib/pkgconfig"
-
 # If output is connected to a terminal use bold text
 # for important messages.
 bold=
@@ -163,10 +163,23 @@ Show information about configuration and module states
     exit
 }
 
+# If module names are given, check them for correctness, otherwise
+# check the modules in $DEFAULT_MODULES (which could come from the
+# config file and might be wrong).
 check_module_names() {
     local -a invalid_modules
     local is_valid
-    for module in "$@"; do
+    local modules
+
+    if [[ -z "$@" ]]; then
+        echo -n "Checking default module names ... "
+        modules="$DEFAULT_MODULES"
+    else
+        echo -n "Checking module name from command line ... "
+        modules="$@"
+    fi
+
+    for module in $modules; do
         is_valid="n"
         for available_module in "${AVAILABLE_MODULES[@]}"; do
             if [[ $module == $available_module ]]; then
@@ -176,11 +189,15 @@ check_module_names() {
         done
         [[ $is_valid == "n" ]] && invalid_modules+=("$module")
     done
+
     if [[ ${#invalid_modules[@]} -gt 0 ]]; then
-        echo "Invalid module names: ${invalid_modules[@]}"
+        echo # for echo -n above
+        echo_bold "Invalid module names: ${invalid_modules[@]}"
         echo "Valid module names are: ${AVAILABLE_MODULES[@]}"
         echo "For more info use: tox-builder help"
         exit
+    else
+        echo "OK"
     fi
 }
 
@@ -471,6 +488,15 @@ info() {
 ########################################################################
 #                                MAIN
 ########################################################################
+
+if [[ -r "$CONFIG_FILE" ]]; then
+    echo "Applying settings from config file '$CONFIG_FILE' ..."
+    . "$CONFIG_FILE"
+else
+    echo "Config file '$CONFIG_FILE' not found; using default configuration"
+fi
+
+export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:$TOX_BUILDER_DIR/install/lib/pkgconfig"
 
 if [[ $(id -u) -eq 0 ]]; then
     echo "You should not run this script as user root!"

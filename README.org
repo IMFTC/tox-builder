@@ -41,10 +41,14 @@ tox-builder run toxic
 *** Installing Venom and Neuland
 
    If you also want to build and install the gtk+ clients Venom and/or
-   Neuland, you can append 'venom' and/or 'neuland' to the
-   =DEFAULT_MODULES= variable in the CONFIG section inside the
-   tox-builder script and then run 'tox-builder update'. As you might
-   have guessed, you can then launch venom or neuland with:
+   Neuland, you can create the config file $HOME/.config/tox-builder
+   and overwrite the DEFAULT_MODULES variable accordingly. For
+   example, to build both you could use:
+#+BEGIN_SRC shell
+DEFAULT_MODULES="libsodium toxcore toxic venom neuland"
+#+END_SRC
+   And then run 'tox-builder update' to build and install both
+   clients. As you might have guessed, you can then launch them with:
 #+BEGIN_SRC shell
 tox-builder run (venom|neuland)
 #+END_SRC
