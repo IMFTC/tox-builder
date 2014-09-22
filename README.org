@@ -16,7 +16,7 @@
   - https://github.com/naxuroqa/Venom.git
   - https://github.com/IMFTC/neuland.git
 
-** Using ~tox-builder~
+** Using tox-builder
 
 *** Installing Toxic
    By default, =tox-builder= installs libsodium, toxcore and toxic.
@@ -64,7 +64,7 @@ tox-builder update
    had been tainted (contained uncommited changes).
 
 
-*** The ~build~ command
+*** The build command
 
     You can use the =build= command instead of the =update= command to
     force an unconditional uninstall/rebuild/install of the given
