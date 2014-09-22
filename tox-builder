@@ -119,7 +119,7 @@ DEFAULT_MODULES="libsodium toxcore toxic"
 # L I B S O D I UM
 # https://github.com/jedisct1/libsodium/#installation
 GIT_URL[libsodium]="https://github.com/jedisct1/libsodium.git"
-GIT_TAG[libsodium]="0.4.2"
+GIT_TAG[libsodium]="0.7.0"
 BUILD_AUTO[libsodium]="./autogen.sh"
 BUILD_CONFIGURE[libsodium]="./configure\
  --prefix='$TOX_BUILDER_DIR/install'"
